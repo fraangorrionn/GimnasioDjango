@@ -44,10 +44,11 @@ class Horario(models.Model):
     hora_fin = models.TimeField()
 
 class Publicacion(models.Model):
-    clase = models.ForeignKey(Clase, on_delete=models.CASCADE, related_name='publicaciones')
+    clase = models.ForeignKey('Clase', on_delete=models.CASCADE, related_name='publicaciones')
     titulo = models.CharField(max_length=100)
     contenido = models.TextField()
     fecha_publicacion = models.DateField(auto_now_add=True)
+    imagen = models.ImageField(upload_to='publicaciones/', null=True, blank=True) 
 
 class InscripcionClase(models.Model):
     ESTADOS = (
