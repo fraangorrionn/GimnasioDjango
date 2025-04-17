@@ -5,7 +5,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import get_user_model
-from .serializers import RegistroUsuarioSerializer  # Asegúrate de que lo tienes
+from rest_framework.exceptions import AuthenticationFailed
+from .serializers import RegistroUsuarioSerializer
 
 Usuario = get_user_model()
 
@@ -24,6 +25,23 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['username'] = user.username
         token['rol'] = user.rol
         return token
+
+    def validate(self, attrs):
+        username_or_email = attrs.get("username")
+        password = attrs.get("password")
+
+        try:
+            user = Usuario.objects.filter(username=username_or_email).first()
+            if not user:
+                user = Usuario.objects.filter(email=username_or_email).first()
+            if not user or not user.check_password(password):
+                raise AuthenticationFailed("Credenciales inválidas.")
+        except Usuario.DoesNotExist:
+            raise AuthenticationFailed("Credenciales inválidas.")
+
+        # Reemplazamos el username por el real para que funcione el flujo
+        attrs['username'] = user.username
+        return super().validate(attrs)
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
