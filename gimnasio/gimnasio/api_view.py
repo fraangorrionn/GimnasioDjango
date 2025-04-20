@@ -472,3 +472,42 @@ def eliminar_inscripcion(request, inscripcion_id):
         return Response("Inscripción eliminada correctamente", status=status.HTTP_200_OK)
     except Exception as error:
         return Response({"error": repr(error)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#------------------------------------------imagen clase----------------------------------------------------  
+    
+@api_view(['POST'])
+@parser_classes([MultiPartParser, FormParser])
+def subir_imagen_clase(request, clase_id):
+    try:
+        clase = Clase.objects.get(id=clase_id)
+    except Clase.DoesNotExist:
+        return Response({'error': 'Clase no encontrada'}, status=status.HTTP_404_NOT_FOUND)
+
+    datos = request.data.copy()
+    datos['clase'] = clase.id
+    serializer = ImagenClaseSerializer(data=datos)
+
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#------------------------------------------comentario publicacion----------------------------------------------------  
+
+@api_view(['POST'])
+def crear_comentario(request, publicacion_id):
+    try:
+        publicacion = Publicacion.objects.get(id=publicacion_id)
+    except Publicacion.DoesNotExist:
+        return Response({'error': 'Publicación no encontrada'}, status=status.HTTP_404_NOT_FOUND)
+
+    datos = request.data.copy()
+    datos['publicacion'] = publicacion.id
+    datos['usuario'] = request.user.id
+
+    serializer = ComentarioSerializer(data=datos)
+
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

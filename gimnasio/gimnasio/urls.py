@@ -52,7 +52,12 @@ urlpatterns = [
     path('inscripciones/actualizar/<int:inscripcion_id>/', api_view.actualizar_inscripcion_parcial, name='actualizar_inscripcion_parcial'),
     path('inscripciones/eliminar/<int:inscripcion_id>/', api_view.eliminar_inscripcion, name='eliminar_inscripcion'),
     
+    
+    path('clases/<int:clase_id>/imagenes/', api_view.subir_imagen_clase, name='subir_imagen_clase'),
+    path('publicaciones/<int:publicacion_id>/comentarios/', api_view.crear_comentario, name='crear_comentario'),
+    
     # registro
     path('usuarios/registrar_usuario/', register_usuario, name='registrar_usuario'),
     path('login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    
 ]

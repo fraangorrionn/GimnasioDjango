@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Usuario, Suscripcion, Pago, Clase, Horario, Publicacion, InscripcionClase
+from .models import *
 
 class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
@@ -51,6 +51,19 @@ class InscripcionClaseSerializer(serializers.ModelSerializer):
                 message="El usuario ya está inscrito en esta clase."
             )
         ]
+        
+class ImagenClaseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ImagenClase
+        fields = ['id', 'clase', 'imagen', 'descripcion', 'fecha_subida']
+
+class ComentarioSerializer(serializers.ModelSerializer):
+    usuario_nombre = serializers.CharField(source='usuario.username', read_only=True)
+
+    class Meta:
+        model = Comentario
+        fields = ['id', 'publicacion', 'usuario', 'usuario_nombre', 'contenido', 'fecha']
+
         
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import get_user_model

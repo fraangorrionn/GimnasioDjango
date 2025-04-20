@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.conf import settings
 
 class Usuario(AbstractUser):
     ROLES = (
@@ -62,3 +63,22 @@ class InscripcionClase(models.Model):
 
     class Meta:
         unique_together = ('usuario', 'clase')
+
+
+class ImagenClase(models.Model):
+    clase = models.ForeignKey('Clase', on_delete=models.CASCADE, related_name='imagenes')
+    imagen = models.ImageField(upload_to='clases/')
+    descripcion = models.CharField(max_length=200, blank=True)
+    fecha_subida = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Imagen de {self.clase.nombre} ({self.id})"
+
+class Comentario(models.Model):
+    publicacion = models.ForeignKey('Publicacion', on_delete=models.CASCADE, related_name='comentarios')
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    contenido = models.TextField()
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Comentario de {self.usuario.username} en {self.publicacion.titulo}"
