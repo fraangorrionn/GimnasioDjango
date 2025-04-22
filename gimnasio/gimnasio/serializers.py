@@ -22,9 +22,12 @@ class ClaseSerializer(serializers.ModelSerializer):
         fields = '__all__'
         
 class HorarioSerializer(serializers.ModelSerializer):
+    clase_nombre = serializers.CharField(source='clase.nombre', read_only=True)
+
     class Meta:
         model = Horario
-        fields = '__all__'
+        fields = ['id', 'clase', 'clase_nombre', 'dia_semana', 'hora_inicio', 'hora_fin']
+
 
     def validate(self, data):
         hora_inicio = data.get('hora_inicio')
@@ -51,18 +54,6 @@ class InscripcionClaseSerializer(serializers.ModelSerializer):
                 message="El usuario ya está inscrito en esta clase."
             )
         ]
-        
-class ImagenClaseSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ImagenClase
-        fields = ['id', 'clase', 'imagen', 'descripcion', 'fecha_subida']
-
-class ComentarioSerializer(serializers.ModelSerializer):
-    usuario_nombre = serializers.CharField(source='usuario.username', read_only=True)
-
-    class Meta:
-        model = Comentario
-        fields = ['id', 'publicacion', 'usuario', 'usuario_nombre', 'contenido', 'fecha']
 
         
 from django.contrib.auth.hashers import make_password
