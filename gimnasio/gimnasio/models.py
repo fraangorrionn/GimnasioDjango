@@ -64,3 +64,17 @@ class InscripcionClase(models.Model):
     class Meta:
         unique_together = ('usuario', 'clase')
 
+class Comentario(models.Model):
+    publicacion = models.ForeignKey(Publicacion, on_delete=models.CASCADE, related_name='comentarios')
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    contenido = models.TextField()
+    fecha_comentario = models.DateTimeField(auto_now_add=True)
+
+class LikeComentario(models.Model):
+    comentario = models.ForeignKey(Comentario, on_delete=models.CASCADE, related_name='likes')
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    tipo = models.CharField(max_length=10, choices=[('like', 'Like'), ('dislike', 'Dislike')])
+
+    class Meta:
+        unique_together = ('comentario', 'usuario')
+

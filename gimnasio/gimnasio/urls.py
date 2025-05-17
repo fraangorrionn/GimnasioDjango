@@ -56,4 +56,10 @@ urlpatterns = [
     path('usuarios/registrar_usuario/', register_usuario, name='registrar_usuario'),
     path('login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     
+    #comentario
+    path('comentarios/<int:publicacion_id>/', api_view.obtener_comentarios),
+    path('comentarios/crear/', api_view.crear_comentario),
+    path('comentarios/<int:comentario_id>/like_dislike_comentario/', api_view.like_dislike_comentario),
+
+    
 ]

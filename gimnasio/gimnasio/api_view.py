@@ -416,17 +416,35 @@ def obtener_pago_id(request, pago_id):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def crear_pago(request):
+    print("Se ha recibido un intento de crear un pago desde el frontend.")
     if request.user.rol != 'cliente':
         return Response({'error': 'Solo los clientes pueden registrar pagos.'}, status=403)
 
-    serializer = PagoSerializer(data=request.data)
-    if serializer.is_valid():
-        try:
-            serializer.save()
-            return Response("Pago registrado", status=status.HTTP_201_CREATED)
-        except Exception as error:
-            return Response(repr(error), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # Buscar suscripción existente
+    suscripcion = Suscripcion.objects.filter(usuario=request.user).order_by('-fecha_suscripcion').first()
+
+    # Si no hay suscripción o está cancelada/expirada, crear o reactivar
+    if not suscripcion or suscripcion.estado != 'activa':
+        if suscripcion:
+            suscripcion.estado = 'activa'
+            suscripcion.save()
+        else:
+            suscripcion = Suscripcion.objects.create(usuario=request.user, estado='activa')
+
+    # Crear el pago asociado
+    pago = Pago.objects.create(
+        suscripcion=suscripcion,
+        estado='completado',
+        cantidad=10.0
+    )
+
+    return Response({
+        'mensaje': 'Pago registrado y suscripción activada.',
+        'pago_id': pago.id,
+        'suscripcion_id': suscripcion.id
+    }, status=status.HTTP_201_CREATED)
+
+
 
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
@@ -600,3 +618,40 @@ def eliminar_inscripcion(request, inscripcion_id):
         return Response("Inscripción eliminada correctamente", status=status.HTTP_200_OK)
     except Exception as error:
         return Response({"error": repr(error)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#------------------------------------------inscripciones clase----------------------------------------------------    
+
+@api_view(['GET'])
+def obtener_comentarios(request, publicacion_id):
+    comentarios = Comentario.objects.filter(publicacion_id=publicacion_id).order_by('-fecha_comentario')
+    serializer = ComentarioSerializer(comentarios, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def crear_comentario(request):
+    data = request.data.copy()
+    serializer = ComentarioSerializer(data=data)
+    if serializer.is_valid():
+        serializer.save(usuario=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def like_dislike_comentario(request, comentario_id):
+    tipo = request.data.get('tipo')
+    if tipo not in ['like', 'dislike']:
+        return Response({'error': 'Tipo inválido'}, status=400)
+
+    comentario = Comentario.objects.get(id=comentario_id)
+    like, creado = LikeComentario.objects.get_or_create(comentario=comentario, usuario=request.user)
+    if not creado and like.tipo == tipo:
+        like.delete()
+        return Response({'mensaje': f'{tipo} eliminado'}, status=200)
+    else:
+        like.tipo = tipo
+        like.save()
+        return Response({'mensaje': f'{tipo} actualizado'}, status=200)

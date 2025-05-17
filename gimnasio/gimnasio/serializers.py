@@ -55,6 +55,29 @@ class InscripcionClaseSerializer(serializers.ModelSerializer):
             )
         ]
 
+class LikeComentarioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LikeComentario
+        fields = ['id', 'usuario', 'tipo']
+
+class ComentarioSerializer(serializers.ModelSerializer):
+    usuario = serializers.PrimaryKeyRelatedField(read_only=True)
+    usuario_data = UsuarioSerializer(source='usuario', read_only=True)
+    likes = serializers.SerializerMethodField()
+    dislikes = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Comentario
+        fields = ['id', 'publicacion', 'usuario', 'usuario_data', 'contenido', 'fecha_comentario', 'likes', 'dislikes']
+
+
+    def get_likes(self, obj):
+        return obj.likes.filter(tipo='like').count()
+
+    def get_dislikes(self, obj):
+        return obj.likes.filter(tipo='dislike').count()
+        
+        
         
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import get_user_model
