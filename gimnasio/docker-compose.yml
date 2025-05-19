@@ -1,0 +1,40 @@
+version: '3'
+
+services:
+  mariadb:
+    image: mariadb:10.7
+    container_name: mariadb
+    restart: always
+    environment:
+      MYSQL_DATABASE: gimnasio
+      MYSQL_USER: usuario
+      MYSQL_PASSWORD: 2004
+      MYSQL_ROOT_PASSWORD: rootpass
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  backend:
+    image: fraangorrionn/gimnasiobackend:v5
+    container_name: gimnasio-backend
+    depends_on:
+      - mariadb
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - DB_NAME=gimnasio
+      - DB_USER=usuario
+      - DB_PASSWORD=2004
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+    volumes:
+      - static_volume:/app/static
+      - media_volume:/app/media
+    restart: always
+
+volumes:
+  static_volume:
+  media_volume:
+  db_data:
