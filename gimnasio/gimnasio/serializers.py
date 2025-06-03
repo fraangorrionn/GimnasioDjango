@@ -2,9 +2,21 @@ from rest_framework import serializers
 from .models import *
 
 class UsuarioSerializer(serializers.ModelSerializer):
+    foto_perfil_url = serializers.SerializerMethodField()
+
     class Meta:
         model = Usuario
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'rol']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'rol', 'foto_perfil_url']
+
+    def get_foto_perfil_url(self, obj):
+        request = self.context.get('request', None)
+        if not request:
+            return None
+        if obj.foto_perfil and hasattr(obj.foto_perfil, 'url'):
+            return request.build_absolute_uri(obj.foto_perfil.url)
+        return None
+
+
 
 class SuscripcionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -17,10 +29,18 @@ class PagoSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ClaseSerializer(serializers.ModelSerializer):
+    imagen_url = serializers.SerializerMethodField()
+
     class Meta:
         model = Clase
-        fields = '__all__'
-        
+        fields = ['id', 'usuario', 'nombre', 'descripcion', 'tipo', 'cupo_maximo', 'imagen_url']
+
+    def get_imagen_url(self, obj):
+        request = self.context.get('request')
+        if obj.imagen and hasattr(obj.imagen, 'url'):
+            return request.build_absolute_uri(obj.imagen.url)
+        return None
+
 class HorarioSerializer(serializers.ModelSerializer):
     clase_nombre = serializers.CharField(source='clase.nombre', read_only=True)
 

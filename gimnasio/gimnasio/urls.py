@@ -3,6 +3,8 @@ from . import api_view
 from .registro_views import register_usuario, CustomTokenObtainPairView
 
 urlpatterns = [
+    #usuario
+    path('usuario/foto_perfil/', api_view.actualizar_foto_perfil, name='actualizar_foto_perfil'),
     
     #clases
     path('clases/', api_view.obtener_clase, name='obtener_clase'),

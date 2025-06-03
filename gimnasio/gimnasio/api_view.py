@@ -7,13 +7,30 @@ from .serializers import *
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db import IntegrityError
 
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
+def actualizar_foto_perfil(request):
+    usuario = request.user
+    foto = request.FILES.get('foto_perfil')
+
+    if not foto:
+        return Response({'error': 'No se ha enviado ninguna foto'}, status=400)
+
+    usuario.foto_perfil = foto
+    usuario.save()
+
+    serializer = UsuarioSerializer(usuario, context={'request': request})
+    return Response(serializer.data, status=200)
+
 #------------------------------------------CLASE----------------------------------------------------
 
 @api_view(['GET'])
 def obtener_clase(request):
     clases = Clase.objects.all()
-    serializer = ClaseSerializer(clases, many=True)
+    serializer = ClaseSerializer(clases, many=True, context={'request': request})
     return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 @api_view(['GET'])
 def obtener_clase_id(request, clase_id):
@@ -26,21 +43,24 @@ def obtener_clase_id(request, clase_id):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
 def crear_clase(request):
     if request.user.rol != 'monitor':
         return Response({'error': 'Permiso denegado. Solo los monitores pueden crear clases.'}, status=status.HTTP_403_FORBIDDEN)
 
-    serializer = ClaseSerializer(data=request.data)
+    serializer = ClaseSerializer(data=request.data, context={'request': request})
     if serializer.is_valid():
         try:
-            serializer.save()
+            serializer.save(usuario=request.user)
             return Response("Clase creada", status=status.HTTP_201_CREATED)
         except Exception as error:
             return Response(repr(error), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
 def editar_clase(request, clase_id):
     if request.user.rol != 'monitor':
         return Response({'error': 'Solo los monitores pueden editar clases.'}, status=status.HTTP_403_FORBIDDEN)
@@ -50,7 +70,7 @@ def editar_clase(request, clase_id):
     except Clase.DoesNotExist:
         return Response({"error": "Clase no encontrada"}, status=status.HTTP_404_NOT_FOUND)
 
-    serializer = ClaseSerializer(instance=clase, data=request.data)
+    serializer = ClaseSerializer(instance=clase, data=request.data, context={'request': request})
     if serializer.is_valid():
         try:
             serializer.save()
@@ -58,6 +78,7 @@ def editar_clase(request, clase_id):
         except Exception as error:
             return Response(repr(error), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])

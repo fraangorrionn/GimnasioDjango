@@ -9,6 +9,7 @@ class Usuario(AbstractUser):
         ('admin', 'Administrador'),
     )
     rol = models.CharField(max_length=10, choices=ROLES)
+    foto_perfil = models.ImageField(upload_to='fotos_perfil/', null=True, blank=True)
 
 class Suscripcion(models.Model):
     ESTADOS = (
@@ -37,6 +38,7 @@ class Clase(models.Model):
     descripcion = models.TextField()
     tipo = models.CharField(max_length=50)
     cupo_maximo = models.IntegerField()
+    imagen = models.ImageField(upload_to='clases/', null=True, blank=True)
 
 class Horario(models.Model):
     clase = models.ForeignKey(Clase, on_delete=models.CASCADE, related_name='horarios')
