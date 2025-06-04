@@ -12,10 +12,17 @@ Usuario = get_user_model()
 
 @api_view(['POST'])
 def register_usuario(request):
-    serializer = RegistroUsuarioSerializer(data=request.data)
+    data = request.data.copy()
+
+    # Autogenerar username si no se envía
+    if 'username' not in data or not data['username']:
+        if 'email' in data:
+            data['username'] = data['email'].split('@')[0]
+
+    serializer = RegistroUsuarioSerializer(data=data)
     if serializer.is_valid():
         serializer.save()
-        return Response("Usuario registrado con éxito", status=status.HTTP_201_CREATED)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):

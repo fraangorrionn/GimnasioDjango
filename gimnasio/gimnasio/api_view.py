@@ -676,3 +676,32 @@ def like_dislike_comentario(request, comentario_id):
         like.tipo = tipo
         like.save()
         return Response({'mensaje': f'{tipo} actualizado'}, status=200)
+
+#------------------------------------------categorias clase----------------------------------------------------    
+
+@api_view(['GET'])
+def obtener_categorias_clase(request):
+    categorias = CategoriaClase.objects.all()
+    serializer = CategoriaClaseSerializer(categorias, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def obtener_clases_por_categoria(request, categoria_slug):
+    try:
+        categoria = CategoriaClase.objects.get(slug=categoria_slug)
+    except CategoriaClase.DoesNotExist:
+        return Response({'error': 'Categoría no encontrada'}, status=404)
+
+    clases = Clase.objects.filter(categoria=categoria)
+    clases_serializadas = ClaseSerializer(clases, many=True, context={'request': request})
+
+    monitores = set(clase.usuario for clase in clases)
+    monitores_serializados = UsuarioSerializer(monitores, many=True, context={'request': request})
+
+    return Response({
+        'categoria': categoria.nombre,
+        'clases': clases_serializadas.data,
+        'monitores': monitores_serializados.data
+    })
+
+

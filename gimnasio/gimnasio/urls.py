@@ -14,6 +14,11 @@ urlpatterns = [
     path('clases/actualizar/<int:clase_id>/', api_view.actualizar_clase_parcial, name='actualizar_clase_parcial'),
     path('clases/eliminar/<int:clase_id>/', api_view.eliminar_clase, name='eliminar_clase'),
     
+    #categorías
+    path('categorias_clase/', api_view.obtener_categorias_clase, name='obtener_categorias_clase'),
+    path('categorias/<slug:categoria_slug>/clases/', api_view.obtener_clases_por_categoria, name='obtener_clases_por_categoria'),
+
+
     #horario
     path('horarios/', api_view.obtener_horarios),
     path('horarios/<int:horario_id>/', api_view.obtener_horario_id),

@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.conf import settings
+from django.utils.text import slugify
 
 class Usuario(AbstractUser):
     ROLES = (
@@ -32,13 +33,26 @@ class Pago(models.Model):
     cantidad = models.DecimalField(max_digits=10, decimal_places=2)
     estado = models.CharField(max_length=20, choices=ESTADOS)
 
+class CategoriaClase(models.Model):
+    nombre = models.CharField(max_length=50, unique=True)
+    slug = models.SlugField(max_length=60, unique=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.nombre)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.nombre
+
 class Clase(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='clases')  # solo monitores
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField()
-    tipo = models.CharField(max_length=50)
+    categoria = models.ForeignKey(CategoriaClase, on_delete=models.SET_NULL, null=True, related_name='clases')
     cupo_maximo = models.IntegerField()
     imagen = models.ImageField(upload_to='clases/', null=True, blank=True)
+
 
 class Horario(models.Model):
     clase = models.ForeignKey(Clase, on_delete=models.CASCADE, related_name='horarios')

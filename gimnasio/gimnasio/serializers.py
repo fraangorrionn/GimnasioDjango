@@ -30,10 +30,19 @@ class PagoSerializer(serializers.ModelSerializer):
 
 class ClaseSerializer(serializers.ModelSerializer):
     imagen_url = serializers.SerializerMethodField()
-
+    categoria_nombre = serializers.CharField(source='categoria.nombre', read_only=True)
+    monitor_nombre = serializers.CharField(source='usuario.get_full_name', read_only=True)
+    monitor_foto = serializers.SerializerMethodField()
+    
     class Meta:
         model = Clase
-        fields = ['id', 'usuario', 'nombre', 'descripcion', 'tipo', 'cupo_maximo', 'imagen_url']
+        fields = ['id', 'usuario', 'nombre', 'descripcion', 'categoria', 'categoria_nombre', 'cupo_maximo', 'imagen_url', 'monitor_nombre', 'monitor_foto']
+
+    def get_monitor_foto(self, obj):
+        request = self.context.get('request')
+        if obj.usuario.foto_perfil:
+            return request.build_absolute_uri(obj.usuario.foto_perfil.url)
+        return None
 
     def get_imagen_url(self, obj):
         request = self.context.get('request')
@@ -41,6 +50,11 @@ class ClaseSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(obj.imagen.url)
         return None
 
+class CategoriaClaseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CategoriaClase
+        fields = ['id', 'nombre']
+        
 class HorarioSerializer(serializers.ModelSerializer):
     clase_nombre = serializers.CharField(source='clase.nombre', read_only=True)
 
@@ -104,6 +118,7 @@ from django.contrib.auth import get_user_model
 
 Usuario = get_user_model()
 
+    
 class RegistroUsuarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
@@ -114,4 +129,4 @@ class RegistroUsuarioSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data['password'] = make_password(validated_data['password'])
-        return super().create(validated_data)
+        return Usuario.objects.create(**validated_data)
