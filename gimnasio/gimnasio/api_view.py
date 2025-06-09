@@ -6,6 +6,7 @@ from .models import Clase
 from .serializers import *
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db import IntegrityError
+from .utils import enviar_notificacion_email
 
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
@@ -31,12 +32,11 @@ def obtener_clase(request):
     serializer = ClaseSerializer(clases, many=True, context={'request': request})
     return Response(serializer.data, status=status.HTTP_200_OK)
 
-
 @api_view(['GET'])
 def obtener_clase_id(request, clase_id):
     try:
         clase = Clase.objects.get(id=clase_id)
-        serializer = ClaseSerializer(clase)
+        serializer = ClaseSerializer(clase, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
     except Clase.DoesNotExist:
         return Response({'error': 'Clase no encontrada'}, status=status.HTTP_404_NOT_FOUND)
@@ -50,13 +50,9 @@ def crear_clase(request):
 
     serializer = ClaseSerializer(data=request.data, context={'request': request})
     if serializer.is_valid():
-        try:
-            serializer.save(usuario=request.user)
-            return Response("Clase creada", status=status.HTTP_201_CREATED)
-        except Exception as error:
-            return Response(repr(error), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        serializer.save(usuario=request.user)
+        return Response("Clase creada", status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
@@ -64,21 +60,20 @@ def crear_clase(request):
 def editar_clase(request, clase_id):
     if request.user.rol != 'monitor':
         return Response({'error': 'Solo los monitores pueden editar clases.'}, status=status.HTTP_403_FORBIDDEN)
-
+    
     try:
         clase = Clase.objects.get(id=clase_id)
     except Clase.DoesNotExist:
-        return Response({"error": "Clase no encontrada"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'Clase no encontrada'}, status=status.HTTP_404_NOT_FOUND)
+
+    if clase.usuario != request.user:
+        return Response({'error': 'No tienes permiso para modificar esta clase.'}, status=status.HTTP_403_FORBIDDEN)
 
     serializer = ClaseSerializer(instance=clase, data=request.data, context={'request': request})
     if serializer.is_valid():
-        try:
-            serializer.save()
-            return Response("Clase editada", status=status.HTTP_200_OK)
-        except Exception as error:
-            return Response(repr(error), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        serializer.save()
+        return Response("Clase editada", status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
@@ -89,15 +84,15 @@ def actualizar_clase_parcial(request, clase_id):
     try:
         clase = Clase.objects.get(id=clase_id)
     except Clase.DoesNotExist:
-        return Response({"error": "Clase no encontrada"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'Clase no encontrada'}, status=status.HTTP_404_NOT_FOUND)
 
-    serializer = ClaseSerializer(instance=clase, data=request.data, partial=True)
+    if clase.usuario != request.user:
+        return Response({'error': 'No tienes permiso para modificar esta clase.'}, status=status.HTTP_403_FORBIDDEN)
+
+    serializer = ClaseSerializer(instance=clase, data=request.data, partial=True, context={'request': request})
     if serializer.is_valid():
-        try:
-            serializer.save()
-            return Response("Clase actualizada parcialmente", status=status.HTTP_200_OK)
-        except Exception as error:
-            return Response(repr(error), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        serializer.save()
+        return Response("Clase actualizada parcialmente", status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['DELETE'])
@@ -109,13 +104,14 @@ def eliminar_clase(request, clase_id):
     try:
         clase = Clase.objects.get(id=clase_id)
     except Clase.DoesNotExist:
-        return Response({"error": "Clase no encontrada"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'Clase no encontrada'}, status=status.HTTP_404_NOT_FOUND)
 
-    try:
-        clase.delete()
-        return Response("Clase eliminada correctamente", status=status.HTTP_200_OK)
-    except Exception as error:
-        return Response({"error": repr(error)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    if clase.usuario != request.user:
+        return Response({'error': 'No tienes permiso para eliminar esta clase.'}, status=status.HTTP_403_FORBIDDEN)
+
+    clase.delete()
+    return Response("Clase eliminada correctamente", status=status.HTTP_200_OK)
+
 
 
 #------------------------------------------HORARIO----------------------------------------------------
@@ -209,13 +205,6 @@ def eliminar_horario(request, horario_id):
 
     
 #------------------------------------------PUBLICACIÓN----------------------------------------------------
-from rest_framework.decorators import api_view, permission_classes, parser_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.response import Response
-from rest_framework import status
-from .models import Publicacion
-from .serializers import PublicacionSerializer
 
 @api_view(['GET'])
 def obtener_publicaciones(request):
@@ -239,13 +228,22 @@ def crear_publicacion(request):
     if request.user.rol != 'monitor':
         return Response({'error': 'Solo los monitores pueden crear publicaciones.'}, status=403)
 
+    clase_id = request.data.get('clase')
+    if not clase_id:
+        return Response({'error': 'Clase requerida'}, status=400)
+
+    try:
+        clase = Clase.objects.get(id=clase_id)
+    except Clase.DoesNotExist:
+        return Response({'error': 'Clase no encontrada'}, status=404)
+
+    if clase.usuario != request.user:
+        return Response({'error': 'No tienes permiso para publicar en esta clase.'}, status=403)
+
     serializer = PublicacionSerializer(data=request.data)
     if serializer.is_valid():
-        try:
-            serializer.save()
-            return Response("Publicación creada", status=status.HTTP_201_CREATED)
-        except Exception as error:
-            return Response(repr(error), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        serializer.save()
+        return Response("Publicación creada", status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['PUT'])
@@ -258,16 +256,16 @@ def editar_publicacion(request, publicacion_id):
     try:
         publicacion = Publicacion.objects.get(id=publicacion_id)
     except Publicacion.DoesNotExist:
-        return Response({"error": "Publicación no encontrada"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'Publicación no encontrada'}, status=404)
 
-    serializer = PublicacionSerializer(instance=publicacion, data=request.data)
+    if publicacion.clase.usuario != request.user:
+        return Response({'error': 'No tienes permiso para editar esta publicación.'}, status=403)
+
+    serializer = PublicacionSerializer(publicacion, data=request.data)
     if serializer.is_valid():
-        try:
-            serializer.save()
-            return Response("Publicación editada", status=status.HTTP_200_OK)
-        except Exception as error:
-            return Response(repr(error), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response("Publicación editada", status=200)
+    return Response(serializer.errors, status=400)
 
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
@@ -279,16 +277,16 @@ def actualizar_publicacion_parcial(request, publicacion_id):
     try:
         publicacion = Publicacion.objects.get(id=publicacion_id)
     except Publicacion.DoesNotExist:
-        return Response({"error": "Publicación no encontrada"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'Publicación no encontrada'}, status=404)
 
-    serializer = PublicacionSerializer(instance=publicacion, data=request.data, partial=True)
+    if publicacion.clase.usuario != request.user:
+        return Response({'error': 'No tienes permiso para editar esta publicación.'}, status=403)
+
+    serializer = PublicacionSerializer(publicacion, data=request.data, partial=True)
     if serializer.is_valid():
-        try:
-            serializer.save()
-            return Response("Publicación actualizada parcialmente", status=status.HTTP_200_OK)
-        except Exception as error:
-            return Response(repr(error), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response("Publicación actualizada parcialmente", status=200)
+    return Response(serializer.errors, status=400)
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
@@ -299,13 +297,13 @@ def eliminar_publicacion(request, publicacion_id):
     try:
         publicacion = Publicacion.objects.get(id=publicacion_id)
     except Publicacion.DoesNotExist:
-        return Response({"error": "Publicación no encontrada"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'Publicación no encontrada'}, status=404)
 
-    try:
-        publicacion.delete()
-        return Response("Publicación eliminada correctamente", status=status.HTTP_200_OK)
-    except Exception as error:
-        return Response({"error": repr(error)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    if publicacion.clase.usuario != request.user:
+        return Response({'error': 'No tienes permiso para eliminar esta publicación.'}, status=403)
+
+    publicacion.delete()
+    return Response("Publicación eliminada correctamente", status=200)
 
 
 #------------------------------------------SUSCRIPCIÓN----------------------------------------------------
@@ -569,7 +567,16 @@ def crear_inscripcion(request):
     if serializer.is_valid():
         try:
             serializer.save()
+
+            inscripcion = serializer.instance
+            clase = inscripcion.clase
+            usuario = inscripcion.usuario
+
+            mensaje = f'Te has inscrito correctamente en la clase "{clase.nombre}". ¡Nos vemos pronto!'
+            enviar_notificacion_email('Inscripción confirmada', mensaje, usuario.email)
+
             return Response("Inscripción creada", status=status.HTTP_201_CREATED)
+            
         except IntegrityError:
             return Response("El usuario ya está inscrito en esta clase", status=status.HTTP_400_BAD_REQUEST)
         except Exception as error:
@@ -635,10 +642,17 @@ def eliminar_inscripcion(request, inscripcion_id):
         return Response({'error': 'No puedes eliminar esta inscripción.'}, status=403)
 
     try:
+        clase = inscripcion.clase
+        usuario = inscripcion.usuario
+
+        mensaje = f'Has cancelado tu inscripción a la clase "{clase.nombre}". Esperamos verte pronto en otra clase.'
+        enviar_notificacion_email('Inscripción cancelada', mensaje, usuario.email)
+
         inscripcion.delete()
         return Response("Inscripción eliminada correctamente", status=status.HTTP_200_OK)
     except Exception as error:
         return Response({"error": repr(error)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 #------------------------------------------inscripciones clase----------------------------------------------------    
 
@@ -705,3 +719,53 @@ def obtener_clases_por_categoria(request, categoria_slug):
     })
 
 
+#------------------------------------------reserva horario----------------------------------------------------   
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def reservar_horario(request, horario_id):
+    usuario = request.user
+    try:
+        horario = Horario.objects.get(id=horario_id)
+        clase = horario.clase
+    except Horario.DoesNotExist:
+        return Response({'error': 'Horario no encontrado'}, status=404)
+
+    if not InscripcionClase.objects.filter(usuario=usuario, clase=clase, estado='activa').exists():
+        return Response({'error': 'Debes estar inscrito en la clase para reservar.'}, status=403)
+
+    if horario.reservas.count() >= clase.cupo_maximo:
+        return Response({'error': 'No hay cupo disponible en este horario.'}, status=400)
+
+    reserva, creada = ReservaHorario.objects.get_or_create(usuario=usuario, horario=horario)
+    if not creada:
+        return Response({'error': 'Ya tienes una reserva en este horario.'}, status=400)
+
+    return Response({'mensaje': 'Reserva realizada correctamente.'}, status=201)
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def cancelar_reserva(request, horario_id):
+    usuario = request.user
+    try:
+        reserva = ReservaHorario.objects.get(usuario=usuario, horario_id=horario_id)
+        reserva.delete()
+        return Response({'mensaje': 'Reserva cancelada correctamente.'}, status=200)
+    except ReservaHorario.DoesNotExist:
+        return Response({'error': 'No tienes reserva en este horario.'}, status=404)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def ver_reservas_horario(request, horario_id):
+    try:
+        reservas = ReservaHorario.objects.filter(horario_id=horario_id)
+        return Response({'reservas': reservas.count()}, status=200)
+    except Horario.DoesNotExist:
+        return Response({'error': 'Horario no encontrado'}, status=404)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def tiene_reserva_horario(request, horario_id):
+    usuario = request.user
+    reservado = ReservaHorario.objects.filter(usuario=usuario, horario_id=horario_id).exists()
+    return Response({'reservado': reservado}, status=200)

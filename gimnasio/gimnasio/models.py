@@ -94,3 +94,11 @@ class LikeComentario(models.Model):
     class Meta:
         unique_together = ('comentario', 'usuario')
 
+class ReservaHorario(models.Model):
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    horario = models.ForeignKey(Horario, on_delete=models.CASCADE, related_name='reservas')
+    fecha_reserva = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('usuario', 'horario')
+

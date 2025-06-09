@@ -111,7 +111,18 @@ class ComentarioSerializer(serializers.ModelSerializer):
     def get_dislikes(self, obj):
         return obj.likes.filter(tipo='dislike').count()
         
-        
+class ReservaHorarioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReservaHorario
+        fields = '__all__'
+        validators = [
+            serializers.UniqueTogetherValidator(
+                queryset=ReservaHorario.objects.all(),
+                fields=['usuario', 'horario'],
+                message="Ya tienes una reserva para este horario."
+            )
+        ]
+
         
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import get_user_model
@@ -126,6 +137,16 @@ class RegistroUsuarioSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'password': {'write_only': True}
         }
+
+    def validate_username(self, value):
+        if Usuario.objects.filter(username=value).exists():
+            raise serializers.ValidationError("Este nombre de usuario ya está en uso.")
+        return value
+
+    def validate_email(self, value):
+        if Usuario.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Este correo electrónico ya está en uso.")
+        return value
 
     def create(self, validated_data):
         validated_data['password'] = make_password(validated_data['password'])

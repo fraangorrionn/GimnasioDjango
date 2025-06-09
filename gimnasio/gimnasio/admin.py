@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Usuario, Suscripcion, Pago, Clase, Horario, Publicacion, InscripcionClase, Comentario, LikeComentario, CategoriaClase
+from .models import Usuario, Suscripcion, Pago, Clase, Horario, Publicacion, InscripcionClase, Comentario, LikeComentario, CategoriaClase, ReservaHorario
 
 admin.site.register(Usuario)
 admin.site.register(Suscripcion)
@@ -11,3 +11,4 @@ admin.site.register(InscripcionClase)
 admin.site.register(Comentario)
 admin.site.register(LikeComentario)
 admin.site.register(CategoriaClase)
+admin.site.register(ReservaHorario)

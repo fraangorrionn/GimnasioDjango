@@ -14,11 +14,6 @@ Usuario = get_user_model()
 def register_usuario(request):
     data = request.data.copy()
 
-    # Autogenerar username si no se envía
-    if 'username' not in data or not data['username']:
-        if 'email' in data:
-            data['username'] = data['email'].split('@')[0]
-
     serializer = RegistroUsuarioSerializer(data=data)
     if serializer.is_valid():
         serializer.save()

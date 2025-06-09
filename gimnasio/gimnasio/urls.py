@@ -68,5 +68,11 @@ urlpatterns = [
     path('comentarios/crear/', api_view.crear_comentario),
     path('comentarios/<int:comentario_id>/like_dislike_comentario/', api_view.like_dislike_comentario),
 
-    
+    #reservas
+    path('reservas/<int:horario_id>/crear/', api_view.reservar_horario, name='reservar_horario'),
+    path('reservas/<int:horario_id>/cancelar/', api_view.cancelar_reserva, name='cancelar_reserva'),
+    path('reservas/<int:horario_id>/contador/', api_view.ver_reservas_horario, name='ver_reservas_horario'),
+    path('reservas/<int:horario_id>/', api_view.tiene_reserva_horario),
+
+
 ]
