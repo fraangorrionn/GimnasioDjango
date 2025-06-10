@@ -225,6 +225,8 @@ def obtener_publicacion_id(request, publicacion_id):
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser, FormParser])
 def crear_publicacion(request):
+    from .utils import enviar_notificacion_email
+
     if request.user.rol != 'monitor':
         return Response({'error': 'Solo los monitores pueden crear publicaciones.'}, status=403)
 
@@ -243,6 +245,12 @@ def crear_publicacion(request):
     serializer = PublicacionSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
+
+        inscritos = InscripcionClase.objects.filter(clase=clase, estado='activa')
+        for ins in inscritos:
+            mensaje = f'Se ha publicado una nueva publicación en la clase "{clase.nombre}": {request.data.get("titulo")}'
+            enviar_notificacion_email('Nueva publicación disponible', mensaje, ins.usuario.email)
+
         return Response("Publicación creada", status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -724,6 +732,8 @@ def obtener_clases_por_categoria(request, categoria_slug):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def reservar_horario(request, horario_id):
+    from .utils import enviar_notificacion_email
+
     usuario = request.user
     try:
         horario = Horario.objects.get(id=horario_id)
@@ -741,18 +751,29 @@ def reservar_horario(request, horario_id):
     if not creada:
         return Response({'error': 'Ya tienes una reserva en este horario.'}, status=400)
 
+    if creada:
+        mensaje = f'Tu reserva para el horario {horario.dia_semana} de {horario.hora_inicio} a {horario.hora_fin} en la clase "{clase.nombre}" ha sido confirmada.'
+        enviar_notificacion_email('Reserva confirmada', mensaje, usuario.email)
+
     return Response({'mensaje': 'Reserva realizada correctamente.'}, status=201)
+
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def cancelar_reserva(request, horario_id):
+    from .utils import enviar_notificacion_email
+
     usuario = request.user
     try:
         reserva = ReservaHorario.objects.get(usuario=usuario, horario_id=horario_id)
+        mensaje = f'Has cancelado tu reserva para el horario {reserva.horario.dia_semana} de {reserva.horario.hora_inicio} a {reserva.horario.hora_fin} en la clase "{reserva.horario.clase.nombre}".'
+        enviar_notificacion_email('Reserva cancelada', mensaje, usuario.email)
+
         reserva.delete()
         return Response({'mensaje': 'Reserva cancelada correctamente.'}, status=200)
     except ReservaHorario.DoesNotExist:
         return Response({'error': 'No tienes reserva en este horario.'}, status=404)
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

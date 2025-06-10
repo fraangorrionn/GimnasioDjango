@@ -41,7 +41,7 @@ python -m venv myvenv
 source myvenv/bin/activate
 
 ### 3. Instala dependencias:
-
+pip install cloudinary django-cloudinary-storage
 pip install -r requirements.txt
 
 ### 4. Configura tu base de datos (MariaDB) y actualiza settings.py:
