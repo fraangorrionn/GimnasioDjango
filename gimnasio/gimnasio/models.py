@@ -36,6 +36,7 @@ class Pago(models.Model):
 class CategoriaClase(models.Model):
     nombre = models.CharField(max_length=50, unique=True)
     slug = models.SlugField(max_length=60, unique=True, blank=True)
+    imagen = models.ImageField(upload_to='categorias/', null=True, blank=True)
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -44,6 +45,7 @@ class CategoriaClase(models.Model):
 
     def __str__(self):
         return self.nombre
+
 
 class Clase(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='clases')  # solo monitores

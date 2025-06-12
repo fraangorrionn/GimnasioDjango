@@ -36,24 +36,36 @@ class ClaseSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Clase
-        fields = ['id', 'usuario', 'nombre', 'descripcion', 'categoria', 'categoria_nombre', 'cupo_maximo', 'imagen_url', 'monitor_nombre', 'monitor_foto']
+        fields = [
+            'id', 'usuario', 'nombre', 'descripcion', 'categoria', 'categoria_nombre',
+            'cupo_maximo', 'imagen', 'imagen_url', 'monitor_nombre', 'monitor_foto'
+        ]
 
     def get_monitor_foto(self, obj):
-        request = self.context.get('request')
-        if obj.usuario.foto_perfil:
-            return request.build_absolute_uri(obj.usuario.foto_perfil.url)
+        if obj.usuario.foto_perfil and hasattr(obj.usuario.foto_perfil, 'url'):
+            return obj.usuario.foto_perfil.url
         return None
 
     def get_imagen_url(self, obj):
-        request = self.context.get('request')
         if obj.imagen and hasattr(obj.imagen, 'url'):
-            return request.build_absolute_uri(obj.imagen.url)
+            return obj.imagen.url
         return None
 
+
 class CategoriaClaseSerializer(serializers.ModelSerializer):
+    imagen_url = serializers.SerializerMethodField()
+
     class Meta:
         model = CategoriaClase
-        fields = ['id', 'nombre']
+        fields = ['id', 'nombre', 'slug', 'imagen', 'imagen_url']
+        read_only_fields = ['slug']
+
+    def get_imagen_url(self, obj):
+        if obj.imagen and hasattr(obj.imagen, 'url'):
+            return obj.imagen.url
+        return None
+
+
         
 class HorarioSerializer(serializers.ModelSerializer):
     clase_nombre = serializers.CharField(source='clase.nombre', read_only=True)

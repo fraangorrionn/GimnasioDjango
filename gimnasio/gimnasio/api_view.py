@@ -790,3 +790,56 @@ def tiene_reserva_horario(request, horario_id):
     usuario = request.user
     reservado = ReservaHorario.objects.filter(usuario=usuario, horario_id=horario_id).exists()
     return Response({'reservado': reservado}, status=200)
+
+#------------------------------------------categorias----------------------------------------------------   
+
+@api_view(['GET'])
+def obtener_categoria(request, categoria_id):
+    try:
+        categoria = CategoriaClase.objects.get(id=categoria_id)
+        serializer = CategoriaClaseSerializer(categoria, many=True, context={'request': request})
+        return Response(serializer.data, status=200)
+    except CategoriaClase.DoesNotExist:
+        return Response({'error': 'Categoría no encontrada'}, status=404)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
+def crear_categoria(request):
+    if request.user.rol not in ['monitor', 'admin']:
+        return Response({'error': 'Solo los administradores y monitores pueden crear categorías.'}, status=403)
+
+    serializer = CategoriaClaseSerializer(data=request.data, context={'request': request})
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=201)
+    return Response(serializer.errors, status=400)
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser])
+def editar_categoria(request, categoria_id):
+    if request.user.rol not in ['monitor', 'admin']:
+        return Response({'error': 'Solo los administradores y monitores pueden editar categorías.'}, status=403)
+    try:
+        categoria = CategoriaClase.objects.get(id=categoria_id)
+    except CategoriaClase.DoesNotExist:
+        return Response({'error': 'Categoría no encontrada'}, status=404)
+
+    serializer = CategoriaClaseSerializer(categoria, data=request.data, partial=True, context={'request': request})
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=200)
+    return Response(serializer.errors, status=400)
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def eliminar_categoria(request, categoria_id):
+    if request.user.rol not in ['monitor', 'admin']:
+        return Response({'error': 'Solo los administradores y monitores pueden eliminar categorías.'}, status=403)
+    try:
+        categoria = CategoriaClase.objects.get(id=categoria_id)
+        categoria.delete()
+        return Response({'mensaje': 'Categoría eliminada correctamente.'}, status=200)
+    except CategoriaClase.DoesNotExist:
+        return Response({'error': 'Categoría no encontrada'}, status=404)

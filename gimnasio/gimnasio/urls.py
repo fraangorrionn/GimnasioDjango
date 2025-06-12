@@ -17,6 +17,10 @@ urlpatterns = [
     #categorías
     path('categorias_clase/', api_view.obtener_categorias_clase, name='obtener_categorias_clase'),
     path('categorias/<slug:categoria_slug>/clases/', api_view.obtener_clases_por_categoria, name='obtener_clases_por_categoria'),
+    path('categorias/<int:categoria_id>/', api_view.obtener_categoria, name='obtener_categoria'),
+    path('categorias/crear/', api_view.crear_categoria, name='crear_categoria'),
+    path('categorias/editar/<int:categoria_id>/', api_view.editar_categoria, name='editar_categoria'),
+    path('categorias/eliminar/<int:categoria_id>/', api_view.eliminar_categoria, name='eliminar_categoria'),
 
 
     #horario
@@ -73,6 +77,5 @@ urlpatterns = [
     path('reservas/<int:horario_id>/cancelar/', api_view.cancelar_reserva, name='cancelar_reserva'),
     path('reservas/<int:horario_id>/contador/', api_view.ver_reservas_horario, name='ver_reservas_horario'),
     path('reservas/<int:horario_id>/', api_view.tiene_reserva_horario),
-
-
+    
 ]
